@@ -2,12 +2,13 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Space Invaders Pro</title>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
 <style>
 * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-body { background:#000; display:flex; flex-direction:column; justify-content:center; align-items:center; height:100vh; overflow:hidden; font-family:'Orbitron',monospace; touch-action:none; }
+html,body{width:100%;height:100%;overflow:hidden;}
+body { background:#000; display:flex; flex-direction:column; justify-content:center; align-items:center; height:100vh; height:100dvh; overflow:hidden; font-family:'Orbitron',monospace; touch-action:none; }
 #wrapper { position:relative; display:inline-block; }
 canvas { display:block; cursor:crosshair; }
 /* Touch overlay for drag-to-move + auto fire */
@@ -17,7 +18,7 @@ canvas { display:block; cursor:crosshair; }
   pointer-events:none;
   z-index:10;
 }
-#touchOverlay.active { display:block; pointer-events:all; }
+#touchOverlay.active { display:block; }
 /* Pause & menu small buttons for mobile - top right */
 #mPauseBtn, #mMenuBtn {
   position:absolute; pointer-events:all;
@@ -55,14 +56,16 @@ let scale=1;
 function resize(){
   const vw=window.innerWidth, vh=window.innerHeight;
   scale=Math.min(vw/BASE_W, vh/BASE_H);
+  // On mobile, fill full screen
+  const cw=Math.floor(BASE_W*scale);
+  const ch=Math.floor(BASE_H*scale);
   canvas.width=BASE_W; canvas.height=BASE_H;
-  canvas.style.width=BASE_W*scale+'px';
-  canvas.style.height=BASE_H*scale+'px';
-  touchOverlay.style.width=BASE_W*scale+'px';
-  touchOverlay.style.height=BASE_H*scale+'px';
-  // Position mobile buttons
-  mPauseBtn.style.right=(10+BASE_W*scale-BASE_W*scale)+'px';
-  mMenuBtn.style.right='10px';
+  canvas.style.width=cw+'px';
+  canvas.style.height=ch+'px';
+  touchOverlay.style.width=cw+'px';
+  touchOverlay.style.height=ch+'px';
+  mPauseBtn.style.right='10px';
+  mMenuBtn.style.right='62px';
 }
 resize();
 window.addEventListener('resize', resize);
@@ -664,7 +667,6 @@ function updateMobileUI(){
   } else {
     touchOverlay.classList.remove('active');
   }
-  // Buttons only shown when game is playing/paused - managed by showMobileButtons()
   mPauseBtn.style.display='none';
   mMenuBtn.style.display='none';
 }
@@ -674,6 +676,8 @@ function showMobileButtons(show){
   const d = show ? 'flex' : 'none';
   mPauseBtn.style.display = d;
   mMenuBtn.style.display = d;
+  // Only allow touch overlay during gameplay
+  touchOverlay.style.pointerEvents = show ? 'all' : 'none';
 }
 updateMobileUI();
 
@@ -682,6 +686,23 @@ function getCanvasPos(e){
   return {x:(e.clientX-r.left)/scale,y:(e.clientY-r.top)/scale};
 }
 canvas.addEventListener('mousemove',e=>{const p=getCanvasPos(e);mouse.x=p.x;mouse.y=p.y;});
+
+// Touch tap on canvas for menu/shop buttons
+canvas.addEventListener('touchstart',e=>{
+  if(state===S.PLAYING||state===S.BOSSENTRY) return;
+  e.preventDefault();resumeAC();
+  const p=getCanvasPos(e.touches[0]);
+  mouse.x=p.x;mouse.y=p.y;
+},{passive:false});
+canvas.addEventListener('touchend',e=>{
+  if(state===S.PLAYING||state===S.BOSSENTRY) return;
+  e.preventDefault();resumeAC();
+  const t=e.changedTouches[0];
+  const p=getCanvasPos(t);
+  mouse.x=p.x;mouse.y=p.y;
+  // Simulate click
+  canvas.dispatchEvent(new MouseEvent('click',{clientX:t.clientX,clientY:t.clientY,bubbles:true}));
+},{passive:false});
 canvas.addEventListener('click',e=>{
   resumeAC();const p=getCanvasPos(e);mouse.x=p.x;mouse.y=p.y;
   if(state===S.LOADING||state===S.BOSSENTRY)return;
