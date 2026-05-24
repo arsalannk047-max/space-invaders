@@ -1,0 +1,24 @@
+{
+  "name": "Space Invaders Pro",
+  "short_name": "Space Invaders",
+  "description": "Epic Space Invaders game with boss fights, power-ups and skin shop!",
+  "start_url": "./index.html",
+  "display": "fullscreen",
+  "orientation": "portrait",
+  "background_color": "#000011",
+  "theme_color": "#00ffff",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
