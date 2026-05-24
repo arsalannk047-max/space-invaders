@@ -15,9 +15,9 @@
 <style>
 * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
 html,body{width:100%;height:100%;overflow:hidden;}
-body { background:#000; display:flex; flex-direction:column; justify-content:center; align-items:center; height:100vh; height:100dvh; overflow:hidden; font-family:'Orbitron',monospace; touch-action:none; }
-#wrapper { position:relative; display:inline-block; }
-canvas { display:block; cursor:crosshair; }
+body { background:#000; display:flex; flex-direction:column; justify-content:center; align-items:center; width:100vw; height:100vh; height:100dvh; overflow:hidden; font-family:'Orbitron',monospace; touch-action:none; }
+#wrapper { position:relative; display:inline-block; width:100%; height:100%; display:flex; justify-content:center; align-items:center; }
+canvas { display:block; cursor:crosshair; max-width:100vw; max-height:100dvh; }
 /* Touch overlay for drag-to-move + auto fire */
 #touchOverlay {
   display:none;
@@ -62,15 +62,30 @@ const BASE_W=800, BASE_H=600;
 let scale=1;
 function resize(){
   const vw=window.innerWidth, vh=window.innerHeight;
-  scale=Math.min(vw/BASE_W, vh/BASE_H);
-  // On mobile, fill full screen
-  const cw=Math.floor(BASE_W*scale);
-  const ch=Math.floor(BASE_H*scale);
-  canvas.width=BASE_W; canvas.height=BASE_H;
-  canvas.style.width=cw+'px';
-  canvas.style.height=ch+'px';
-  touchOverlay.style.width=cw+'px';
-  touchOverlay.style.height=ch+'px';
+  const mobile = vw < 600 || 'ontouchstart' in window;
+  let cw, ch;
+  if(mobile){
+    // Fill entire screen on mobile
+    cw = vw;
+    ch = vh;
+    scale = Math.min(vw/BASE_W, vh/BASE_H);
+  } else {
+    scale = Math.min(vw/BASE_W, vh/BASE_H);
+    cw = Math.floor(BASE_W*scale);
+    ch = Math.floor(BASE_H*scale);
+  }
+  canvas.width = BASE_W;
+  canvas.height = BASE_H;
+  canvas.style.width = cw+'px';
+  canvas.style.height = ch+'px';
+  // Also stretch canvas resolution to fill screen on mobile
+  if(mobile){
+    canvas.width = Math.floor(BASE_W / scale);
+    canvas.height = Math.floor(BASE_H / scale);
+    scale = 1;
+  }
+  touchOverlay.style.width = cw+'px';
+  touchOverlay.style.height = ch+'px';
   mPauseBtn.style.right='10px';
   mMenuBtn.style.right='62px';
 }
