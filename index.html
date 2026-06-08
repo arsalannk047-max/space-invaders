@@ -64,16 +64,28 @@ const mMenuBtn = document.getElementById('mMenuBtn');
 // ── RESPONSIVE SIZING ─────────────────────────────────────────────────────
 const BASE_W=800, BASE_H=600;
 let scale=1;
+let rotated=false;
 function resize(){
   const vw = window.innerWidth;
   const vh = window.innerHeight;
-  scale = Math.min(vw / BASE_W, vh / BASE_H);
-  // Always keep canvas at 800x600, use CSS transform to scale
+  const portrait = vh > vw;
+
   canvas.width  = BASE_W;
   canvas.height = BASE_H;
   canvasContainer.style.width  = BASE_W + 'px';
   canvasContainer.style.height = BASE_H + 'px';
-  canvasContainer.style.transform = `scale(${scale})`;
+
+  if(portrait){
+    rotated = true;
+    scale = Math.min(vh / BASE_W, vw / BASE_H);
+    canvasContainer.style.transformOrigin = 'center center';
+    canvasContainer.style.transform = `rotate(90deg) scale(${scale})`;
+  } else {
+    rotated = false;
+    scale = Math.min(vw / BASE_W, vh / BASE_H);
+    canvasContainer.style.transformOrigin = 'center center';
+    canvasContainer.style.transform = `scale(${scale})`;
+  }
 }
 resize();
 window.addEventListener('resize', resize);
@@ -638,7 +650,11 @@ touchOverlay.addEventListener('touchstart',ev=>{
   touchActive=true;
   const t=ev.touches[0];
   const rect=canvasContainer.getBoundingClientRect();
-  touchX=(t.clientX-rect.left)/scale;
+  if(rotated){
+    touchX=(t.clientY-rect.top)/scale;
+  } else {
+    touchX=(t.clientX-rect.left)/scale;
+  }
   startAutoFire();
 },{passive:false});
 
@@ -647,7 +663,7 @@ touchOverlay.addEventListener('touchmove',ev=>{
   if(!touchActive) return;
   const t=ev.touches[0];
   const rect=canvasContainer.getBoundingClientRect();
-  const newX=(t.clientX-rect.left)/scale;
+  const newX = rotated ? (t.clientY-rect.top)/scale : (t.clientX-rect.left)/scale;
   if(newX<touchX-4) mKeys.left=true, mKeys.right=false;
   else if(newX>touchX+4) mKeys.right=true, mKeys.left=false;
   else mKeys.left=false, mKeys.right=false;
@@ -691,6 +707,12 @@ updateMobileUI();
 
 function getCanvasPos(e){
   const r=canvasContainer.getBoundingClientRect();
+  if(rotated){
+    // Canvas is rotated 90deg: swap and flip coordinates
+    const tx = (e.clientY - r.top) / scale;
+    const ty = BASE_H - (e.clientX - r.left) / scale;
+    return {x: tx, y: ty};
+  }
   return {x:(e.clientX-r.left)/scale,y:(e.clientY-r.top)/scale};
 }
 canvas.addEventListener('mousemove',e=>{const p=getCanvasPos(e);mouse.x=p.x;mouse.y=p.y;});
