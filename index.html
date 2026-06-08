@@ -16,8 +16,16 @@
 * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
 html,body{ width:100%; height:100%; overflow:hidden; background:#000; }
 body { font-family:'Orbitron',monospace; touch-action:none; }
-#wrapper { position:fixed; top:0; left:0; width:100%; height:100%; display:flex; justify-content:center; align-items:center; background:#000; }
-#canvasContainer { position:relative; transform-origin:center center; flex-shrink:0; }
+#wrapper {
+  position:fixed; top:0; left:0; width:100%; height:100%;
+  background:#000;
+  overflow:hidden;
+}
+#canvasContainer {
+  position:absolute;
+  top:50%; left:50%;
+  transform-origin:top left;
+}
 canvas { display:block; cursor:crosshair; }
 #touchOverlay {
   display:none;
@@ -68,18 +76,16 @@ function resize(){
   const vh = window.innerHeight;
   scale = Math.min(vw / BASE_W, vh / BASE_H);
 
-  // Canvas stays 800x600 internally (game logic never changes)
   canvas.width  = BASE_W;
   canvas.height = BASE_H;
   canvas.style.width  = BASE_W + 'px';
   canvas.style.height = BASE_H + 'px';
 
-  // Container also 800x600, CSS transform scales it to fit screen
   canvasContainer.style.width  = BASE_W + 'px';
   canvasContainer.style.height = BASE_H + 'px';
-  canvasContainer.style.transform = `scale(${scale})`;
+  // translate(-50%,-50%) centers it, then scale from top-left
+  canvasContainer.style.transform = `translate(-50%, -50%) scale(${scale})`;
 
-  // Touch overlay same size
   touchOverlay.style.width  = BASE_W + 'px';
   touchOverlay.style.height = BASE_H + 'px';
 }
@@ -645,12 +651,8 @@ touchOverlay.addEventListener('touchstart',ev=>{
   }
   touchActive=true;
   const t=ev.touches[0];
-  const rect=canvasContainer.getBoundingClientRect();
-  if(rotated){
-    touchX=(t.clientY-rect.top)/scale;
-  } else {
-    touchX=(t.clientX-rect.left)/scale;
-  }
+  const rect=canvas.getBoundingClientRect();
+  touchX=(t.clientX-rect.left)/scale;
   startAutoFire();
 },{passive:false});
 
@@ -658,8 +660,8 @@ touchOverlay.addEventListener('touchmove',ev=>{
   ev.preventDefault();
   if(!touchActive) return;
   const t=ev.touches[0];
-  const rect=canvasContainer.getBoundingClientRect();
-  const newX = rotated ? (t.clientY-rect.top)/scale : (t.clientX-rect.left)/scale;
+  const rect=canvas.getBoundingClientRect();
+  const newX=(t.clientX-rect.left)/scale;
   if(newX<touchX-4) mKeys.left=true, mKeys.right=false;
   else if(newX>touchX+4) mKeys.right=true, mKeys.left=false;
   else mKeys.left=false, mKeys.right=false;
@@ -702,14 +704,8 @@ function showMobileButtons(show){
 updateMobileUI();
 
 function getCanvasPos(e){
-  const r=canvasContainer.getBoundingClientRect();
-  if(rotated){
-    // Canvas is rotated 90deg: swap and flip coordinates
-    const tx = (e.clientY - r.top) / scale;
-    const ty = BASE_H - (e.clientX - r.left) / scale;
-    return {x: tx, y: ty};
-  }
-  return {x:(e.clientX-r.left)/scale,y:(e.clientY-r.top)/scale};
+  const r=canvas.getBoundingClientRect();
+  return {x:(e.clientX-r.left)/scale, y:(e.clientY-r.top)/scale};
 }
 canvas.addEventListener('mousemove',e=>{const p=getCanvasPos(e);mouse.x=p.x;mouse.y=p.y;});
 
