@@ -17,17 +17,15 @@
 html,body{ width:100%; height:100%; overflow:hidden; background:#000; }
 body { font-family:'Orbitron',monospace; touch-action:none; }
 #wrapper { position:fixed; top:0; left:0; width:100%; height:100%; display:flex; justify-content:center; align-items:center; background:#000; }
-#canvasContainer { position:relative; transform-origin:center center; }
-canvas { display:block; cursor:crosshair; width:800px; height:600px; }
-/* Touch overlay for drag-to-move + auto fire */
+#canvasContainer { position:relative; transform-origin:center center; flex-shrink:0; }
+canvas { display:block; cursor:crosshair; }
 #touchOverlay {
   display:none;
-  position:absolute; top:0; left:0; width:800px; height:600px;
+  position:absolute; top:0; left:0;
   pointer-events:none;
   z-index:10;
 }
 #touchOverlay.active { display:block; }
-/* Pause & menu small buttons for mobile - top right */
 #mPauseBtn, #mMenuBtn {
   position:absolute; pointer-events:all;
   width:44px; height:44px; border-radius:8px;
@@ -64,28 +62,26 @@ const mMenuBtn = document.getElementById('mMenuBtn');
 // ── RESPONSIVE SIZING ─────────────────────────────────────────────────────
 const BASE_W=800, BASE_H=600;
 let scale=1;
-let rotated=false;
+const rotated=false;
 function resize(){
   const vw = window.innerWidth;
   const vh = window.innerHeight;
-  const portrait = vh > vw;
+  scale = Math.min(vw / BASE_W, vh / BASE_H);
 
+  // Canvas stays 800x600 internally (game logic never changes)
   canvas.width  = BASE_W;
   canvas.height = BASE_H;
+  canvas.style.width  = BASE_W + 'px';
+  canvas.style.height = BASE_H + 'px';
+
+  // Container also 800x600, CSS transform scales it to fit screen
   canvasContainer.style.width  = BASE_W + 'px';
   canvasContainer.style.height = BASE_H + 'px';
+  canvasContainer.style.transform = `scale(${scale})`;
 
-  if(portrait){
-    rotated = true;
-    scale = Math.min(vh / BASE_W, vw / BASE_H);
-    canvasContainer.style.transformOrigin = 'center center';
-    canvasContainer.style.transform = `rotate(90deg) scale(${scale})`;
-  } else {
-    rotated = false;
-    scale = Math.min(vw / BASE_W, vh / BASE_H);
-    canvasContainer.style.transformOrigin = 'center center';
-    canvasContainer.style.transform = `scale(${scale})`;
-  }
+  // Touch overlay same size
+  touchOverlay.style.width  = BASE_W + 'px';
+  touchOverlay.style.height = BASE_H + 'px';
 }
 resize();
 window.addEventListener('resize', resize);
