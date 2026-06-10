@@ -19,12 +19,13 @@ body { font-family:'Orbitron',monospace; touch-action:none; }
 #wrapper {
   position:fixed; top:0; left:0; width:100%; height:100%;
   background:#000;
+  display:flex; align-items:center; justify-content:center;
   overflow:hidden;
 }
 #canvasContainer {
-  position:absolute;
-  top:50%; left:50%;
-  transform-origin:top left;
+  position:relative;
+  transform-origin:center center;
+  flex-shrink:0;
 }
 canvas { display:block; cursor:crosshair; }
 #touchOverlay {
@@ -75,17 +76,13 @@ function resize(){
   const vw = window.innerWidth;
   const vh = window.innerHeight;
   scale = Math.min(vw / BASE_W, vh / BASE_H);
-
   canvas.width  = BASE_W;
   canvas.height = BASE_H;
   canvas.style.width  = BASE_W + 'px';
   canvas.style.height = BASE_H + 'px';
-
   canvasContainer.style.width  = BASE_W + 'px';
   canvasContainer.style.height = BASE_H + 'px';
-  // translate(-50%,-50%) centers it, then scale from top-left
-  canvasContainer.style.transform = `translate(-50%, -50%) scale(${scale})`;
-
+  canvasContainer.style.transform = `scale(${scale})`;
   touchOverlay.style.width  = BASE_W + 'px';
   touchOverlay.style.height = BASE_H + 'px';
 }
@@ -228,16 +225,68 @@ function spawnAliens(){
 function isBossLevel(){return level%3===0;}
 
 // ── ALIEN DRAW ────────────────────────────────────────────────────────────
-const ALIEN_COLORS=[['#ff4466','#ff88aa'],['#44ff88','#aaffcc'],['#ffaa00','#ffdd88']];
+const ALIEN_COLORS=[
+  ['#ff2255','#ff88aa','#ffccdd'],
+  ['#00ffaa','#00cc88','#aaffee'],
+  ['#ffaa00','#ff6600','#ffeeaa'],
+];
+let alienAnimTick=0;
 function drawAlienAt(x,y,type,size,alpha){
-  const [c1,c2]=ALIEN_COLORS[type];const w=36*size,h=28*size;
-  ctx.globalAlpha=alpha;ctx.shadowBlur=8*size;ctx.shadowColor=c1;ctx.fillStyle=c1;
-  if(type===0){ctx.fillRect(x+8*size,y+4*size,w-16*size,h-8*size);ctx.fillRect(x+4*size,y+8*size,6*size,6*size);ctx.fillRect(x+w-10*size,y+8*size,6*size,6*size);ctx.fillRect(x+2*size,y+14*size,6*size,4*size);ctx.fillRect(x+w-8*size,y+14*size,6*size,4*size);ctx.fillStyle=c2;ctx.fillRect(x+12*size,y+8*size,5*size,5*size);ctx.fillRect(x+w-17*size,y+8*size,5*size,5*size);}
-  else if(type===1){ctx.fillRect(x+10*size,y+2*size,w-20*size,h-4*size);ctx.fillRect(x+6*size,y+6*size,6*size,8*size);ctx.fillRect(x+w-12*size,y+6*size,6*size,8*size);ctx.fillRect(x+2*size,y+10*size,6*size,10*size);ctx.fillRect(x+w-8*size,y+10*size,6*size,10*size);ctx.fillStyle=c2;ctx.fillRect(x+13*size,y+7*size,4*size,4*size);ctx.fillRect(x+w-17*size,y+7*size,4*size,4*size);}
-  else{ctx.beginPath();ctx.ellipse(x+w/2,y+h*.65,w/2-2*size,h*.35,0,0,Math.PI*2);ctx.fill();ctx.fillStyle=c2;ctx.beginPath();ctx.ellipse(x+w/2,y+h*.4,w/3,h*.3,0,0,Math.PI*2);ctx.fill();ctx.fillStyle=c1;for(let i=0;i<3;i++){ctx.beginPath();ctx.arc(x+12*size+i*12*size,y+h*.65,3*size,0,Math.PI*2);ctx.fill();}}
+  const t=alienAnimTick;
+  const [c1,c2,c3]=ALIEN_COLORS[type];
+  const w=36*size,h=28*size;
+  ctx.globalAlpha=alpha;
+  ctx.shadowBlur=12*size; ctx.shadowColor=c1;
+  if(type===0){
+    ctx.fillStyle=c1;
+    ctx.beginPath();ctx.roundRect(x+6*size,y+6*size,w-12*size,h-10*size,4*size);ctx.fill();
+    ctx.fillRect(x+10*size,y+1*size,4*size,6*size);ctx.fillRect(x+w-14*size,y+1*size,4*size,6*size);
+    ctx.fillRect(x,y+10*size,7*size,5*size);ctx.fillRect(x+w-7*size,y+10*size,7*size,5*size);
+    const legOff=Math.sin(t*0.15)*2*size;
+    ctx.fillRect(x+4*size,y+h-4*size,3*size,5*size+legOff);
+    ctx.fillRect(x+10*size,y+h-4*size,3*size,5*size-legOff);
+    ctx.fillRect(x+w-13*size,y+h-4*size,3*size,5*size+legOff);
+    ctx.fillRect(x+w-7*size,y+h-4*size,3*size,5*size-legOff);
+    ctx.fillStyle=c3;ctx.shadowBlur=6;ctx.shadowColor='#ffffff';
+    ctx.beginPath();ctx.arc(x+11*size,y+11*size,3.5*size,0,Math.PI*2);ctx.fill();
+    ctx.beginPath();ctx.arc(x+w-11*size,y+11*size,3.5*size,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#000';
+    ctx.beginPath();ctx.arc(x+11*size,y+11*size,1.8*size,0,Math.PI*2);ctx.fill();
+    ctx.beginPath();ctx.arc(x+w-11*size,y+11*size,1.8*size,0,Math.PI*2);ctx.fill();
+  } else if(type===1){
+    ctx.fillStyle=c1;
+    ctx.beginPath();ctx.ellipse(x+w/2,y+h*0.45,w/2-2*size,h*0.42,0,0,Math.PI*2);ctx.fill();
+    for(let i=0;i<4;i++){
+      const wave=Math.sin(t*0.12+i*1.2)*3*size;
+      ctx.fillStyle=i%2===0?c1:c2;
+      ctx.beginPath();ctx.ellipse(x+6*size+i*8*size,y+h-4*size+wave,2.5*size,5*size,0,0,Math.PI*2);ctx.fill();
+    }
+    ctx.fillStyle=c3+'88';
+    ctx.beginPath();ctx.ellipse(x+w/2-4*size,y+h*0.3,7*size,5*size,0,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle=c3;ctx.shadowBlur=8;ctx.shadowColor=c3;
+    ctx.beginPath();ctx.arc(x+w/2-7*size,y+h*0.42,4*size,0,Math.PI*2);ctx.fill();
+    ctx.beginPath();ctx.arc(x+w/2+7*size,y+h*0.42,4*size,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#001a00';
+    ctx.beginPath();ctx.arc(x+w/2-7*size,y+h*0.42,2*size,0,Math.PI*2);ctx.fill();
+    ctx.beginPath();ctx.arc(x+w/2+7*size,y+h*0.42,2*size,0,Math.PI*2);ctx.fill();
+  } else {
+    ctx.fillStyle=c2;
+    ctx.beginPath();ctx.ellipse(x+w/2,y+h*0.7,w/2,h*0.28,0,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle=c1;
+    ctx.beginPath();ctx.ellipse(x+w/2,y+h*0.52,w/3.5,h*0.36,0,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle=c3+'cc';
+    ctx.beginPath();ctx.ellipse(x+w/2,y+h*0.46,w/6,h*0.22,0,0,Math.PI*2);ctx.fill();
+    for(let i=0;i<4;i++){
+      const ang=(t*0.1+i*Math.PI/2);
+      const lx=x+w/2+Math.cos(ang)*14*size,ly=y+h*0.68+Math.sin(ang)*3*size;
+      ctx.fillStyle=i%2===0?'#ffff00':'#ff4400';
+      ctx.shadowBlur=8;ctx.shadowColor=i%2===0?'#ffff00':'#ff4400';
+      ctx.beginPath();ctx.arc(lx,ly,2.5*size,0,Math.PI*2);ctx.fill();
+    }
+  }
   ctx.globalAlpha=1;ctx.shadowBlur=0;
 }
-function drawAlien(a){if(!a.alive)return;drawAlienAt(a.x,a.y,a.type,1,1);}
+function drawAlien(a){if(!a.alive)return;alienAnimTick++;drawAlienAt(a.x,a.y,a.type,1,1);}
 
 function drawPlayer(){
   const sk=activeSkin,{x,y,w,h}=player;
@@ -495,9 +544,19 @@ function drawLoading(){
 }
 
 // ── PAUSE TOGGLE ──────────────────────────────────────────────────────────
+let pausedAt=0;
 function togglePause(){
-  if(state===S.PLAYING){prevState=state;state=S.PAUSED;stopBossMusic();}
-  else if(state===S.PAUSED){state=S.PLAYING;if(boss)startBossMusic();}
+  if(state===S.PLAYING){
+    prevState=state;state=S.PAUSED;
+    stopBossMusic();
+    pausedAt=performance.now();
+  } else if(state===S.PAUSED){
+    state=S.PLAYING;
+    if(boss)startBossMusic();
+    // Re-enable touch overlay
+    touchOverlay.style.pointerEvents='all';
+    requestAnimationFrame(loop);
+  }
 }
 
 // ── UPDATE ────────────────────────────────────────────────────────────────
@@ -769,7 +828,7 @@ function loop(){
   if(state===S.LOADING)drawLoading();
   else if(state===S.MENU){drawMenu();showMobileButtons(false);}
   else if(state===S.PLAYING){drawBackground();drawHUD();if(boss)drawBoss();else aliens.forEach(drawAlien);drawPlayer();drawBullets();alienBullets.forEach(b=>drawBullet(b,'#ff4466'));bossBullets.forEach(b=>drawBossBullet(b));drawDroppingPups();drawExplosions();drawTouchGuide();showMobileButtons(true);}
-  else if(state===S.PAUSED){drawPause();showMobileButtons(true);}
+  else if(state===S.PAUSED){drawPause();showMobileButtons(true);return;} // stop loop when paused
   else if(state===S.GAMEOVER){drawOverlay('GAME OVER','#ff4466',['SCORE: '+score,'COINS: '+totalCoins,'BEST COMBO: x'+comboMax]);showMobileButtons(false);}
   else if(state===S.LEVELCLEAR){drawLevelClear();showMobileButtons(false);}
   else if(state===S.WIN){drawOverlay('VICTORY!','#ffd700',['SCORE: '+score,'COINS: '+totalCoins,'BEST COMBO: x'+comboMax]);showMobileButtons(false);}
